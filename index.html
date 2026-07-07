@@ -28,15 +28,22 @@
       color: var(--ink);
       display: grid;
       place-items: center;
-      padding: 0px;
+      padding: 28px;
     }
 
     main {
       width: min(1120px, 100%);
       display: grid;
       grid-template-columns: minmax(300px, 520px) minmax(300px, 1fr);
-      gap: 34px;
+      gap: 20px 34px;
       align-items: center;
+    }
+
+    .page-title {
+      grid-column: 1 / -1;
+      order: -2;
+      text-align: center;
+      margin-bottom: 2px;
     }
 
     .stage {
@@ -179,7 +186,7 @@
     }
 
     h1 {
-      margin: 0 0 12px;
+      margin: 0;
       font-size: clamp(25px, 3.2vw, 42px);
       line-height: 1.08;
       letter-spacing: 0;
@@ -259,7 +266,10 @@
 </head>
 <body>
   <main>
-    <h2>A Felnőttképzési és Kompetenciafejlesztési Központ által szervezett elektronikus (Impera) vizsgák 2025-26/1</h2>
+    <header class="page-title">
+      <h2>A Felnőttképzési és Kompetenciafejlesztési Központ által szervezett elektronikus (Impera) vizsgák 2025-26/1</h2>
+    </header>
+
     <section class="stage" aria-label="Animált kari szélforgó">
       <svg class="pinwheel" viewBox="0 0 500 500" role="img" aria-labelledby="chartTitle chartDesc">
         <title id="chartTitle">Kari adatok szélforgó formában</title>
@@ -272,7 +282,7 @@
     </section>
 
     <section class="summary">
-      <p class="lead">A színek a karokat jelölik. Vidd az egeret egy szelet fölé, és a buborékban megjelennek az adott kar tanszékei, a vizsgaszámok és a vizsgában érintett tantárgyszámok.</p>
+      <p class="lead">A színek a karokat jelölik. Vidd az egeret egy szelet fölé, és a buborékban megjelennek az adott kar tanszékei, a vizsgaszámok és a tantárgyszámok.</p>
       <div class="totals" aria-label="Összesített adatok">
         <div class="metric">
           <strong>15 581</strong>
