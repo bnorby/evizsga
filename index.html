@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Animált szélforgó - kari adatok</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #5c6975;
+      --paper: #f6f8fb;
+      --panel: rgba(255, 255, 255, 0.9);
+      --line: rgba(23, 32, 42, 0.14);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.95), transparent 34rem),
+        linear-gradient(135deg, #edf4f7 0%, #f8faf9 44%, #eef3f8 100%);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    main {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: minmax(300px, 520px) minmax(300px, 1fr);
+      gap: 34px;
+      align-items: center;
+    }
+
+    .stage {
+      position: relative;
+      min-height: min(72vw, 560px);
+      display: grid;
+      place-items: center;
+    }
+
+    .pinwheel {
+      width: min(92vw, 510px);
+      aspect-ratio: 1;
+      overflow: visible;
+      filter: drop-shadow(0 18px 26px rgba(25, 35, 45, 0.12));
+    }
+
+    .rotor {
+      transform-origin: 250px 250px;
+      animation: spin 22s linear infinite;
+    }
+
+    .rotor.paused {
+      animation-play-state: paused;
+    }
+
+    .blade {
+      cursor: pointer;
+      stroke: #fff;
+      stroke-width: 8;
+      stroke-linejoin: round;
+      transition: filter 180ms ease, opacity 180ms ease, transform 180ms ease;
+      transform-origin: 250px 250px;
+    }
+
+    .blade:hover,
+    .blade:focus {
+      filter: brightness(1.08) saturate(1.08);
+      opacity: 0.96;
+      outline: none;
+    }
+
+    .hub {
+      fill: #ffffff;
+      stroke: rgba(23, 32, 42, 0.2);
+      stroke-width: 3;
+    }
+
+    .hub-dot {
+      fill: #334155;
+    }
+
+    .tooltip {
+      position: fixed;
+      z-index: 20;
+      width: min(380px, calc(100vw - 32px));
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, calc(-100% - 18px)) scale(0.98);
+      transform-origin: bottom center;
+      transition: opacity 140ms ease, transform 140ms ease;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 40px rgba(22, 31, 42, 0.18);
+      backdrop-filter: blur(10px);
+      padding: 14px 15px;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+      transform: translate(-50%, calc(-100% - 14px)) scale(1);
+    }
+
+    .tooltip::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -9px;
+      width: 16px;
+      height: 16px;
+      transform: translateX(-50%) rotate(45deg);
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tip-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 750;
+    }
+
+    .tip-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.72);
+      white-space: nowrap;
+    }
+
+    .tip-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 7px;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .tip-list li {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: baseline;
+      border-top: 1px solid rgba(23, 32, 42, 0.08);
+      padding-top: 7px;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .numbers {
+      color: var(--muted);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary {
+      padding: 4px 0;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(25px, 3.2vw, 42px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h1 .term {
+      display: block;
+      white-space: nowrap;
+    }
+
+    .lead {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 20px);
+      line-height: 1.48;
+      max-width: 58ch;
+    }
+
+    .totals {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 430px;
+    }
+
+    .metric {
+      border-left: 4px solid #0a8f43;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.62);
+      border-radius: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+      margin-bottom: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 820px) {
+      body {
+        padding: 18px;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .summary {
+        order: -1;
+      }
+
+      .stage {
+        min-height: 420px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .rotor {
+        animation: none;
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="stage" aria-label="Animált kari szélforgó">
+      <svg class="pinwheel" viewBox="0 0 500 500" role="img" aria-labelledby="chartTitle chartDesc">
+        <title id="chartTitle">Kari adatok szélforgó formában</title>
+        <desc id="chartDesc">A színes szeletek az egyes karokhoz tartoznak, föléjük húzva az egérmutatót megjelennek a tanszéki adatok.</desc>
+        <g class="rotor" id="rotor"></g>
+        <circle class="hub" cx="250" cy="250" r="18"></circle>
+        <circle class="hub-dot" cx="250" cy="250" r="5"></circle>
+      </svg>
+      <aside class="tooltip" id="tooltip" aria-hidden="true"></aside>
+    </section>
+
+    <section class="summary">
+      <h2>A Felnőttképzési és Kompetenciafejlesztési Központ által szervezett elektronikus (Impera) vizsgák 2025-26/1</h2>
+      <p class="lead">A színek a karokat jelölik. Vidd az egeret egy szelet fölé, és a buborékban megjelennek az adott kar tanszékei, a vizsgaszámok és a vizsgában érintett tantárgyszámok.</p>
+      <div class="totals" aria-label="Összesített adatok">
+        <div class="metric">
+          <strong>15 581</strong>
+          <span>vizsga összesen</span>
+        </div>
+        <div class="metric">
+          <strong>262</strong>
+          <span>tantárgy összesen</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const data = [
+      {
+        kar: "Albert Kázmér Mosonmagyaróvári Kar",
+        colorName: "narancs",
+        color: "#f47c00",
+        departments: [
+          ["Alkalmazott Fenntarthatóság Tanszék", 112, 4]
+        ]
+      },
+      {
+        kar: "Apáczai Csere János Pedagógiai, Humán- és Társadalomtudományi Kar",
+        colorName: "sötét zöld",
+        color: "#07843b",
+        departments: [
+          ["Nemzetközi Tanulmányok és Kommunikáció Tanszék", 135, 2],
+          ["Szociális Tanulmányok és Szociológia Tanszék", 87, 2]
+        ]
+      },
+      {
+        kar: "AUDI Hungaria Járműmérnöki Kar",
+        colorName: "szürke",
+        color: "#b6b1aa",
+        departments: [
+          ["Alkalmazott Mechanika Tanszék", 209, 8],
+          ["Anyagtudomány és Gépszerkezettan Tanszék", 102, 5],
+          ["Járműfenntartás és Diagnosztika Tanszék", 1367, 19],
+          ["Járműgyártás és Technológia Tanszék", 50, 4],
+          ["Járműhajtás Technológia és Teljesítményelektronika Tanszék", 1603, 3]
+        ]
+      },
+      {
+        kar: "Deák Ferenc Állam- és Jogtudományi Kar",
+        colorName: "sárga",
+        color: "#ffc531",
+        departments: [
+          ["Jogelméleti Tanszék", 72, 2],
+          ["Kereskedelmi és Agrárjogi Tanszék", 85, 6],
+          ["Kriminológiai és Kriminalisztikai Tanszék", 88, 4],
+          ["Munkajogi és Szociális Jogi Tanszék", 16, 1],
+          ["Polgári Jogi és Polgári Eljárásjogi Tanszék", 327, 9]
+        ]
+      },
+      {
+        kar: "Egészség- és Sporttudományi Kar",
+        colorName: "piros",
+        color: "#d9052f",
+        departments: [
+          ["Elméleti Egészségtudományi és Ápolástan Tanszék", 43, 1],
+          ["Szülészeti és Nőgyógyászati Tanszék", 205, 5]
+        ]
+      },
+      {
+        kar: "Építész-, Építő- és Közlekedésmérnöki Kar",
+        colorName: "barna",
+        color: "#c47a00",
+        departments: [
+          ["Közlekedésépítési és Vízmérnöki Tanszék", 33, 2],
+          ["Közlekedési Tanszék", 152, 18],
+          ["Logisztikai és Szállítmányozási Tanszék", 253, 23]
+        ]
+      },
+      {
+        kar: "Informatikai és Villamosmérnöki Kar",
+        colorName: "világos zöld",
+        color: "#96cf1e",
+        departments: [
+          ["Automatizálási és Robotika Tanszék", 342, 5],
+          ["Informatika Tanszék", 599, 22],
+          ["Matematika és Fizika Tanszék", 1151, 14],
+          ["Villamosmérnöki és Infokommunikációs Tanszék", 143, 4]
+        ]
+      },
+      {
+        kar: "Kautz Gyula Gazdaságtudományi Kar",
+        colorName: "kék",
+        color: "#0787c6",
+        departments: [
+          ["Nemzetközi és Alkalmazott Közgazdaságtan Tanszék", 2203, 19],
+          ["Statisztika, Pénzügy és Kontrolling Tanszék", 4364, 42],
+          ["Turizmus és Vendéglátás Tanszék", 9, 2],
+          ["Vezetéstudományi és Marketing Tanszék", 1831, 36]
+        ]
+      }
+    ];
+
+    const rotor = document.querySelector("#rotor");
+    const tooltip = document.querySelector("#tooltip");
+    const center = 250;
+    const innerRadius = 46;
+    const outerRadius = 212;
+    const bladeSpan = 34;
+    const baseRotation = -24;
+    const formatter = new Intl.NumberFormat("hu-HU");
+
+    function polarToCartesian(radius, degrees) {
+      const radians = (degrees - 90) * Math.PI / 180;
+      return {
+        x: center + radius * Math.cos(radians),
+        y: center + radius * Math.sin(radians)
+      };
+    }
+
+    function bladePath(startAngle, endAngle) {
+      const outerStart = polarToCartesian(outerRadius, startAngle);
+      const outerEnd = polarToCartesian(outerRadius, endAngle);
+      const innerEnd = polarToCartesian(innerRadius, endAngle - 6);
+      const innerStart = polarToCartesian(innerRadius, startAngle + 6);
+
+      return [
+        `M ${innerStart.x.toFixed(2)} ${innerStart.y.toFixed(2)}`,
+        `L ${outerStart.x.toFixed(2)} ${outerStart.y.toFixed(2)}`,
+        `A ${outerRadius} ${outerRadius} 0 0 1 ${outerEnd.x.toFixed(2)} ${outerEnd.y.toFixed(2)}`,
+        `L ${innerEnd.x.toFixed(2)} ${innerEnd.y.toFixed(2)}`,
+        `A ${innerRadius} ${innerRadius} 0 0 0 ${innerStart.x.toFixed(2)} ${innerStart.y.toFixed(2)}`,
+        "Z"
+      ].join(" ");
+    }
+
+    function totals(item) {
+      return item.departments.reduce((acc, row) => {
+        acc.exams += row[1];
+        acc.subjects += row[2];
+        return acc;
+      }, { exams: 0, subjects: 0 });
+    }
+
+    function renderTooltip(item) {
+      const sum = totals(item);
+      tooltip.innerHTML = `
+        <h2 class="tip-title">${item.kar}</h2>
+        <div class="tip-meta">
+          <span class="pill">${formatter.format(sum.exams)} vizsga</span>
+          <span class="pill">${formatter.format(sum.subjects)} tantárgy</span>
+        </div>
+        <ul class="tip-list">
+          ${item.departments.map(([name, exams, subjects]) => `
+            <li>
+              <span>${name}</span>
+              <span class="numbers">${formatter.format(exams)} / ${formatter.format(subjects)}</span>
+            </li>
+          `).join("")}
+        </ul>
+      `;
+    }
+
+    function moveTooltip(event) {
+      const margin = 18;
+      const x = Math.min(window.innerWidth - margin, Math.max(margin, event.clientX));
+      const y = Math.min(window.innerHeight - margin, Math.max(120, event.clientY));
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+    }
+
+    data.forEach((item, index) => {
+      const angle = baseRotation + index * 45;
+      const personalTwist = index % 2 === 0 ? -5 : 5;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("class", "blade");
+      path.setAttribute("d", bladePath(angle - bladeSpan / 2, angle + bladeSpan / 2));
+      path.setAttribute("fill", item.color);
+      path.setAttribute("tabindex", "0");
+      path.setAttribute("role", "button");
+      path.setAttribute("aria-label", `${item.kar}, ${item.colorName}`);
+      path.style.transform = `rotate(${personalTwist}deg)`;
+
+      path.addEventListener("pointerenter", (event) => {
+        rotor.classList.add("paused");
+        renderTooltip(item);
+        moveTooltip(event);
+        tooltip.classList.add("visible");
+        tooltip.setAttribute("aria-hidden", "false");
+      });
+
+      path.addEventListener("pointermove", moveTooltip);
+
+      path.addEventListener("pointerleave", () => {
+        rotor.classList.remove("paused");
+        tooltip.classList.remove("visible");
+        tooltip.setAttribute("aria-hidden", "true");
+      });
+
+      path.addEventListener("focus", () => {
+        renderTooltip(item);
+        const box = path.getBoundingClientRect();
+        tooltip.style.left = `${box.left + box.width / 2}px`;
+        tooltip.style.top = `${box.top + box.height / 2}px`;
+        tooltip.classList.add("visible");
+        tooltip.setAttribute("aria-hidden", "false");
+      });
+
+      path.addEventListener("blur", () => {
+        tooltip.classList.remove("visible");
+        tooltip.setAttribute("aria-hidden", "true");
+      });
+
+      rotor.append(path);
+    });
+  </script>
+</body>
+</html>
